@@ -270,8 +270,12 @@ func newOpenStack(cfg Config) (*OpenStack, error) {
 		config := &tls.Config{}
 		config.RootCAs = roots
 		provider.HTTPClient.Transport = netutil.SetOldTransportDefaults(&http.Transport{TLSClientConfig: config})
-
 	}
+
+	provider.HTTPClient.Transport = &httpTransport{
+		t: provider.HTTPClient.Transport,
+	}
+
 	if cfg.Global.TrustId != "" {
 		opts := cfg.toAuth3Options()
 		authOptsExt := trusts.AuthOptsExt{

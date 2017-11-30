@@ -18,7 +18,10 @@ package openstack
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httputil"
 
+	"github.com/golang/glog"
 	"github.com/gophercloud/gophercloud"
 	"github.com/gophercloud/gophercloud/openstack"
 )
@@ -89,4 +92,35 @@ func (os *OpenStack) NewLoadBalancerV2() (*gophercloud.ServiceClient, error) {
 		return nil, fmt.Errorf("failed to find load-balancer v2 endpoint for region %s: %v", os.region, err)
 	}
 	return lb, nil
+}
+
+type httpTransport struct {
+	t http.RoundTripper
+}
+
+func (ht *httpTransport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
+	var reqbody []byte
+	if glog.V(5) {
+		reqbody, err = httputil.DumpRequest(req, true)
+		if err != nil {
+			glog.Errorf("error dumping req: %s", err)
+		}
+	}
+
+	resp, err = ht.t.RoundTrip(req)
+	if resp == nil {
+		return
+	}
+
+	var respbody []byte
+	if glog.V(5) {
+		respbody, err = httputil.DumpResponse(resp, true)
+		if err != nil {
+			glog.Errorf("error dumping resp: %s", err)
+		} else {
+			glog.Infof("req: %+v\nresp: %+v\n", string(reqbody), string(respbody))
+		}
+	}
+
+	return
 }
